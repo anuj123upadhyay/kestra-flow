@@ -10,24 +10,28 @@ A smart, automated system log cleanup solution built with Kestra that archives o
 
 This workflow automatically cleans up old system logs on a daily schedule, creating compressed archives and storing them safely in AWS S3. Perfect for maintaining clean systems while preserving important log data for compliance and debugging purposes.
 
-## 🔄 Workflow Architecture
+## 📸 Workflow Screenshots
+
+### 🔄 Workflow Overview
+![Workflow Overview](images/workflow-overview.png)
+*Complete workflow visualization showing all tasks and their connections*
+
+### 📊 Execution Dashboard
+![Execution Dashboard](images/execution-dashboard.png)
+*Real-time execution monitoring and status tracking*
+
+### 🏗️ Task Configuration
+![Task Configuration](images/log-view.png)
 
 
+### 📝 Execution Logs
+![Execution Logs](images/log-view.png)
+*Comprehensive logging output during workflow execution*
 
-![alt text](<Screenshot 2025-06-13 at 1.29.44 PM.png>)
+### 📈 Results & Outputs
+![Results & Outputs](images/old-log-views.png)
+*Final execution results and generated output files*
 
-
-![alt text](<Screenshot 2025-06-13 at 1.25.56 PM.png>)
-
-
-
-![alt text](<Screenshot 2025-06-13 at 1.25.02 PM.png>)
-
-
-![alt text](<Screenshot 2025-06-13 at 1.25.23 PM.png>)
-
-
-![alt text](<Screenshot 2025-06-13 at 1.25.38 PM.png>)
 ## ⚙️ Configuration
 
 ### 📅 Schedule
