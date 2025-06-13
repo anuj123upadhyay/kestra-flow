@@ -1,0 +1,94 @@
+id: system-log-cleanup
+namespace: devops.utility
+description: |
+  Simple workflow to clean up old system logs and upload archives to S3.
+
+triggers:
+  - id: daily-cleanup
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 2 * * *" 
+    timezone: "Asia/Kolkata"
+
+tasks:
+  - id: find-and-archive
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: alpine:latest
+    commands:
+      - |
+        echo "Creating test log files..."
+        mkdir -p /tmp/logs
+        echo "Old log content 1" > /tmp/logs/app.log.old
+        echo "Old log content 2" > /tmp/logs/error.log.old
+        echo "Current log" > /tmp/logs/current.log
+        
+        # Find old log files
+        find /tmp/logs -name "*.old" > old_files.txt
+        
+        echo "Found old files:"
+        cat old_files.txt
+        
+        # Install zip and create archive
+        apk add --no-cache zip
+        
+        if [ -s old_files.txt ]; then
+          # Use fixed archive name for easier reference
+          archive_name="old_logs_archive.zip"
+          
+          echo "Creating archive: $archive_name"
+          zip -j "$archive_name" /tmp/logs/*.old
+          
+          if [ $? -eq 0 ]; then
+            echo "Archive created successfully: $archive_name"
+            ls -la "$archive_name"
+            echo "$archive_name" > archive_name.txt
+            printf "ARCHIVE_CREATED" > status.txt
+          else
+            echo "Failed to create archive"
+            printf "ARCHIVE_FAILED" > status.txt
+            exit 1
+          fi
+        else
+          echo "No files to archive"
+          echo "NO_ARCHIVE" > archive_name.txt
+          printf "NO_ARCHIVE" > status.txt
+        fi
+        
+        # Debug: show what's actually in status.txt
+        echo "Status file content: '$(cat status.txt)'"
+        echo "Archive name: '$(cat archive_name.txt)'"
+    outputFiles:
+      - "old_logs_archive.zip"
+      - archive_name.txt
+      - old_files.txt
+      - status.txt
+
+  - id: upload-to-s3
+    type: io.kestra.plugin.aws.s3.Upload
+    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY_ID') }}"
+    region: "us-east-1"
+    bucket: "kestra-bucket-anujupadhyay"
+    from: "{{ outputs['find-and-archive'].outputFiles['old_logs_archive.zip'] }}"
+    key: "logs/old_logs_{{ now() | date('yyyyMMdd_HHmmss') }}.zip"
+    runIf: "{{ read(outputs['find-and-archive'].outputFiles['status.txt']) == 'ARCHIVE_CREATED' }}"
+
+  - id: cleanup-notification
+    type: io.kestra.plugin.scripts.shell.Commands
+    containerImage: alpine:latest
+    commands:
+      - |
+        status_content="$(cat status.txt)"
+        echo "Current status: '$status_content'"
+        
+        if [ "$status_content" = "ARCHIVE_CREATED" ]; then
+          echo "Archive uploaded successfully: $(cat archive_name.txt)"
+          echo "Files that were archived:"
+          cat old_files.txt
+          echo "Cleanup completed successfully"
+        else
+          echo "No cleanup was performed (status: $status_content)"
+        fi
+    inputFiles:
+      archive_name.txt: "{{ outputs['find-and-archive'].outputFiles['archive_name.txt'] }}"
+      old_files.txt: "{{ outputs['find-and-archive'].outputFiles['old_files.txt'] }}"
+      status.txt: "{{ outputs['find-and-archive'].outputFiles['status.txt'] }}"
