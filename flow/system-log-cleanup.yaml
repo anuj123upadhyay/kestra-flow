@@ -64,10 +64,10 @@ tasks:
 
   - id: upload-to-s3
     type: io.kestra.plugin.aws.s3.Upload
-    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
-    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY_ID') }}"
-    region: "us-east-1"
-    bucket: "kestra-bucket-anujupadhyay"
+    accessKeyId: "{{ secret('AWS_ACCESS_KEY') }}"
+    secretKeyId: "{{ secret('AWS_SECRET_KEY') }}"
+    region: "{{ secret('AWS_REGION') }}"
+    bucket: "{{ secret('S3_BUCKET') }}"
     from: "{{ outputs['find-and-archive'].outputFiles['old_logs_archive.zip'] }}"
     key: "logs/old_logs_{{ now() | date('yyyyMMdd_HHmmss') }}.zip"
     runIf: "{{ read(outputs['find-and-archive'].outputFiles['status.txt']) == 'ARCHIVE_CREATED' }}"
